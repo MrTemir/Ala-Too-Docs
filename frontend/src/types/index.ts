@@ -7,6 +7,7 @@ export interface User {
   university_id: string;
   full_name: string;
   faculty?: string | null;
+  group_name?: string | null;
   role: UserRole;
 }
 
@@ -18,6 +19,7 @@ export interface Document {
   file_url?: string | null;
   creator_id?: string;
   recipient_id?: string;
+  created_at?: string | null;
   signatures?: Signature[];
 }
 

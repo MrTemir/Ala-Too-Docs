@@ -29,6 +29,7 @@ class User(Base):
     university_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String(255))
     faculty: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    group_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255))
 
@@ -49,6 +50,7 @@ class Document(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255))
     doc_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    language: Mapped[str | None] = mapped_column(String(16), nullable=True)
     raw_text: Mapped[str] = mapped_column(Text)
     file_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     status: Mapped[DocumentStatus] = mapped_column(
@@ -58,6 +60,7 @@ class Document(Base):
     )
     creator_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     creator: Mapped[User] = relationship(
         back_populates="created_documents",

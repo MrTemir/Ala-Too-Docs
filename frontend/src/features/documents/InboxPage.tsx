@@ -75,7 +75,7 @@ export default function InboxPage() {
                   </div>
                   <Link
                     href={`/dashboard/documents/${document.id}`}
-                    className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-800"
+                    className="rounded-md bg-[#00205c] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#16356f]"
                   >
                     Review
                   </Link>

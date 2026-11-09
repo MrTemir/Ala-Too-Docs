@@ -4,7 +4,7 @@ import uuid
 import enum
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import DocumentStatus, UserRole
 
@@ -34,6 +34,7 @@ class UserResponse(BaseModel):
     university_id: str
     full_name: str
     faculty: str | None = None
+    group_name: str | None = None
     role: UserRole
 
 
@@ -78,6 +79,7 @@ class DocumentResponse(BaseModel):
     status: DocumentStatus
     creator_id: uuid.UUID
     recipient_id: uuid.UUID
+    created_at: datetime | None = None
 
 
 class SignatureResponse(BaseModel):
@@ -92,3 +94,17 @@ class SignatureResponse(BaseModel):
 
 class DocumentDetailResponse(DocumentResponse):
     signatures: list[SignatureResponse] = []
+
+
+class DocumentGenerateRequest(BaseModel):
+    description: str = Field(..., min_length=1, max_length=8000)
+    language: DocumentLanguage = DocumentLanguage.russian
+
+
+class DocumentGenerateResponse(BaseModel):
+    generated_text: str
+
+
+class DocumentTranslateRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=12000)
+    language: DocumentLanguage
