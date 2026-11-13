@@ -221,4 +221,5 @@ docker compose exec db psql -U alatoo alatoo   # консоль базы
 | «GROQ_API_KEY is not set» при генерации | Ключ не заполнен в `.env`. Заполни и `docker compose up -d backend`. |
 | backend сразу падает с `JWT_SECRET_KEY must be set` | Не заполнен `JWT_SECRET_KEY` в `.env`. |
 | Сборка фронтенда падает с `Killed` | Мало памяти. Добавь swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile`. |
+| Сервер во внутренней сети (адрес `10.x`, `192.168.x`, `172.16–31.x`) | Let's Encrypt до него не достучится. Оставь `DOMAIN` пустым, сайт будет по `http://IP`. Если порт 80 занят, задай `HTTP_PORT=8080`. |
 | Порт 80/443 занят | На сервере уже есть nginx/apache. Не удаляй его без проверки: возможно, на нём другие сайты. Тогда Caddy убирают, а в существующий nginx добавляют проксирование на контейнеры. |
