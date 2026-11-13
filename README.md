@@ -16,3 +16,7 @@ uvicorn app.main:app --reload
 <img width="2879" height="1635" alt="Снимок экрана 2026-05-28 160357" src="https://github.com/user-attachments/assets/46290681-b3dc-40e8-9c84-fbb7402aa951" />
 
 The health endpoint is available at `GET /health`.
+
+## Деплой
+
+Продакшен-запуск через Docker Compose (Caddy + Next.js + FastAPI + PostgreSQL): см. [deploy/DEPLOY.md](deploy/DEPLOY.md).

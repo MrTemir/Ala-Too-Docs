@@ -76,7 +76,7 @@ const DICTIONARY = {
   },
 } as const;
 
-export type UiCopy = (typeof DICTIONARY)["ru"];
+export type UiCopy = { readonly [Key in keyof (typeof DICTIONARY)["ru"]]: string };
 
 export function readUiLanguage(): UiLanguage {
   if (typeof window === "undefined") {

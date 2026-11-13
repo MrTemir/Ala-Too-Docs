@@ -10,7 +10,11 @@ from typing import Any
 PASSWORD_HASH_ALGORITHM = "pbkdf2_sha256"
 PASSWORD_HASH_ITERATIONS = 260_000
 JWT_ALGORITHM = "HS256"
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "local-development-secret-key")
+DEV_JWT_SECRET_KEY = "local-development-secret-key"
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or DEV_JWT_SECRET_KEY
+
+if os.getenv("APP_ENV") == "production" and JWT_SECRET_KEY == DEV_JWT_SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY must be set in production (openssl rand -hex 32)")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8
 
 

@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app import models
-from app.database import AsyncSessionLocal, Base, close_db_connection, engine
+from app.database import Base, close_db_connection, engine, get_cors_origins
 from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.documents import generate_router
@@ -69,11 +69,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://192.168.56.1:3000",
-    ],
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

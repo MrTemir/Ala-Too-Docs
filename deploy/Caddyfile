@@ -1,0 +1,16 @@
+# DOMAIN = домен (например docs.example.kg) -> Caddy сам получит HTTPS-сертификат Let's Encrypt.
+# DOMAIN = :80 (по умолчанию) -> работает по IP через обычный HTTP.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Всё, что относится к API и PDF-файлам, уходит в FastAPI.
+	@backend path /api/* /static/* /docs /docs/* /redoc /openapi.json /health
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	# Остальное (страницы сайта) отдаёт Next.js.
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
