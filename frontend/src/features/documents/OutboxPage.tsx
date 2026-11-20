@@ -45,7 +45,7 @@ export default function OutboxPage() {
   }, [router]);
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <section className="mx-auto min-h-[70vh] w-full max-w-5xl bg-gray-50 px-4 py-8 text-gray-950 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-950">Outbox</h1>
@@ -53,7 +53,7 @@ export default function OutboxPage() {
         </div>
         <Link
           href="/dashboard/create"
-          className="rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800"
+          className="rounded-md bg-[#00205c] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#16356f]"
         >
           Create
         </Link>
@@ -77,8 +77,11 @@ export default function OutboxPage() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="font-medium text-gray-950">{document.title}</p>
-                    <p className="mt-1 text-sm capitalize text-gray-600">
-                      {document.status}
+                    <p className="mt-1 text-sm text-gray-600">
+                      <span className="capitalize">{document.status}</span>
+                      {document.created_at
+                        ? ` · ${new Date(document.created_at).toLocaleString()}`
+                        : ""}
                     </p>
                   </div>
                   <Link

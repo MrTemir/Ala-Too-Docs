@@ -72,7 +72,7 @@ export default function LoginPage() {
               required
               value={universityId}
               onChange={(event) => setUniversityId(event.target.value)}
-              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#00205c] focus:ring-2 focus:ring-[#d6e3ff]"
               placeholder="Enter your university ID"
             />
           </div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#00205c] focus:ring-2 focus:ring-[#d6e3ff]"
               placeholder="Enter your password"
             />
           </div>
@@ -106,7 +106,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400"
+            className="w-full rounded-md bg-[#00205c] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#16356f] focus:outline-none focus:ring-2 focus:ring-[#00205c] focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             {isSubmitting ? "Signing in..." : "Sign In"}
           </button>

@@ -126,15 +126,15 @@
         <td class="recipient-header">
           <p>{{ recipient_title }}</p>
           <p>{{ recipient_name }}</p>
-          <p>от студента {{ student_name }}</p>
+          <p>{{ from_student_label or "от студента" }} {{ student_name }}</p>
           <p>ID: {{ student_id }}</p>
-          <p>Группа: {{ group_or_faculty }}</p>
+          <p>{{ group_label or "Группа" }}: {{ group_or_faculty }}</p>
         </td>
       </tr>
     </table>
 
     <div class="document-title">{{ application_title or "ЗАЯВЛЕНИЕ" }}</div>
-    <div class="document-number">Регистрационный № {{ doc_number }}</div>
+    <div class="document-number">{{ registration_label or "Регистрационный №" }} {{ doc_number }}</div>
 
     {% block content %}{% endblock %}
 
@@ -142,7 +142,7 @@
       <tr>
         <td class="date-cell">{{ date }}</td>
         <td class="signature-cell">
-          <div class="signature-box">ПОДПИСАНО ЭП</div>
+          <div class="signature-box">{{ signed_label or "ПОДПИСАНО ЭП" }}{% if signer_name %}<br />{{ signer_name }}{% endif %}</div>
         </td>
       </tr>
     </table>

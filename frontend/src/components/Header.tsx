@@ -5,10 +5,19 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import {
+  applyUiTheme,
+  getCopy,
+  readUiLanguage,
+  readUiTheme,
+  type UiLanguage,
+} from "@/src/i18n";
+
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [language, setLanguage] = useState<UiLanguage>("ru");
 
   useEffect(() => {
     function syncAuthState() {
@@ -16,9 +25,16 @@ export default function Header() {
     }
 
     syncAuthState();
+    setLanguage(readUiLanguage());
+    applyUiTheme(readUiTheme());
     window.addEventListener("storage", syncAuthState);
+    window.addEventListener("ui-language", syncAuthState);
+    window.addEventListener("ui-language", () => setLanguage(readUiLanguage()));
 
-    return () => window.removeEventListener("storage", syncAuthState);
+    return () => {
+      window.removeEventListener("storage", syncAuthState);
+      window.removeEventListener("ui-language", syncAuthState);
+    };
   }, [pathname]);
 
   function handleLogout() {
@@ -29,33 +45,35 @@ export default function Header() {
     router.refresh();
   }
 
+  const copy = getCopy(language);
+
   return (
-    <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-      <Link href="/dashboard" className="text-xl font-bold text-blue-700">
+    <header className="flex items-center justify-between rounded-b-3xl bg-[#00205c] px-6 py-4 text-white shadow-sm">
+      <Link href="/dashboard" className="text-xl font-bold text-white">
         Alatoo-Doc
       </Link>
 
-      <nav className="hidden items-center gap-4 text-sm font-medium text-gray-600 md:flex">
+      <nav className="hidden items-center gap-4 text-sm font-medium text-white md:flex">
         {isAuthenticated ? (
           <>
-            <Link className="transition hover:text-blue-700" href="/dashboard">
-              Dashboard
+            <Link className="transition hover:text-[#d6e3ff]" href="/dashboard">
+              {copy.dashboard}
             </Link>
-            <Link className="transition hover:text-blue-700" href="/dashboard/create">
-              Create
+            <Link className="transition hover:text-[#d6e3ff]" href="/dashboard/create">
+              {copy.create}
             </Link>
-            <Link className="transition hover:text-blue-700" href="/dashboard/inbox">
-              Inbox
+            <Link className="transition hover:text-[#d6e3ff]" href="/dashboard/inbox">
+              {copy.inbox}
             </Link>
-            <Link className="transition hover:text-blue-700" href="/dashboard/outbox">
-              Outbox
+            <Link className="transition hover:text-[#d6e3ff]" href="/dashboard/outbox">
+              {copy.outbox}
             </Link>
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-md bg-gray-950 px-3 py-1.5 text-white transition hover:bg-gray-800"
+              className="rounded-full bg-[#d6e3ff] px-3 py-1.5 text-[#00205c] transition hover:bg-white"
             >
-              Logout
+              {copy.logout}
             </button>
           </>
         ) : (
@@ -78,10 +96,11 @@ export default function Header() {
 
       <Image
         src="/logo.png"
-        width={130}
-        height={45}
+        width={52}
+        height={52}
         alt="University logo"
         priority
+        className="h-12 w-12 rounded-full bg-white object-cover"
       />
     </header>
   );

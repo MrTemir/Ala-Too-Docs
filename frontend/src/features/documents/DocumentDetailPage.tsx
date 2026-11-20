@@ -42,9 +42,9 @@ export default function DocumentDetailPage({ documentId }: Props) {
 
   const latestSignature = document?.signatures?.[document.signatures.length - 1];
   const canReview =
-    currentUser?.role === "dean" &&
+    ["dean", "teacher", "admin"].includes(currentUser?.role ?? "") &&
     document?.status === "pending" &&
-    document?.recipient_id === currentUser.id;
+    String(document?.recipient_id ?? "") === String(currentUser?.id ?? "");
 
   const loadDocument = useCallback(async () => {
     const token = localStorage.getItem("access_token");
@@ -154,7 +154,7 @@ export default function DocumentDetailPage({ documentId }: Props) {
         <div>
           <h1 className="text-2xl font-semibold text-gray-950">{document.title}</h1>
           <p className="mt-2 text-sm capitalize text-gray-600">
-            Status: {document.status}
+            Status: {document.status}. Подписать может только адресат этого заявления.
           </p>
         </div>
 
@@ -196,6 +196,12 @@ export default function DocumentDetailPage({ documentId }: Props) {
           </div>
         )}
       </div>
+
+      {document.status === "pending" && !canReview ? (
+        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Подпись недоступна: этот аккаунт не адресат. Открой документ тем пользователем, которого выбрали в Recipient.
+        </p>
+      ) : null}
 
       {canReview ? (
         <div className="sticky bottom-0 mt-6 border-t border-gray-200 bg-gray-50/95 py-4 backdrop-blur">

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import io
+import logging
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_DIR = PROJECT_ROOT / "frontend" / "public"
 FONT_FAMILY = "UniversitySerif"
 DEFAULT_LOGO_PATH = PUBLIC_DIR / "logo.png"
+
+logger = logging.getLogger(__name__)
 
 
 def _candidate_font_paths() -> tuple[Path, ...]:
@@ -126,7 +129,18 @@ def render_document_to_pdf(doc_type: str, context: dict[str, Any]) -> bytes:
         allowed = ", ".join(item.value for item in DocumentType)
         raise ValueError(f"Unsupported document type '{doc_type}'. Allowed: {allowed}") from exc
 
-    return _render_with_reportlab(document_type, context)
+    try:
+        return render_document_to_pdf_with_xhtml2pdf(document_type.value, context)
+    except Exception:
+        logger.exception(
+            "xhtml2pdf failed for document type '%s', falling back to ReportLab",
+            document_type.value,
+        )
+
+    pdf_bytes = _render_with_reportlab(document_type, context)
+    if not pdf_bytes:
+        raise RuntimeError(f"Failed to render PDF for document type '{document_type.value}'")
+    return pdf_bytes
 
 
 def _paragraphs_from_text(text: str) -> list[str]:
@@ -291,6 +305,10 @@ def render_document_to_pdf_with_xhtml2pdf(doc_type: str, context: dict[str, Any]
     )
 
     if result.err:
-        raise RuntimeError("Failed to render PDF document")
+        raise RuntimeError(f"xhtml2pdf reported {result.err} error(s) while rendering PDF")
 
-    return output.getvalue()
+    pdf_bytes = output.getvalue()
+    if not pdf_bytes:
+        raise RuntimeError("xhtml2pdf produced an empty PDF")
+
+    return pdf_bytes

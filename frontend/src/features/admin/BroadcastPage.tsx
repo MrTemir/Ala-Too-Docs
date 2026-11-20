@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { User } from "@/src/types";
@@ -19,20 +19,20 @@ type CurrentUser = User | null;
 
 export default function BroadcastPage() {
   const router = useRouter();
-  const [currentUser] = useState<CurrentUser>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    const storedUser = window.localStorage.getItem("current_user");
-    return storedUser ? (JSON.parse(storedUser) as User) : null;
-  });
+  const [currentUser, setCurrentUser] = useState<CurrentUser>(null);
+  const [isReady, setIsReady] = useState(false);
   const [title, setTitle] = useState("");
   const [faculty, setFaculty] = useState(FACULTIES[0]);
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const storedUser = window.localStorage.getItem("current_user");
+    setCurrentUser(storedUser ? (JSON.parse(storedUser) as User) : null);
+    setIsReady(true);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,7 +76,7 @@ export default function BroadcastPage() {
     }
   }
 
-  if (!currentUser) {
+  if (!isReady || !currentUser) {
     return (
       <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="rounded-lg border border-gray-200 bg-white p-5 text-sm text-gray-600 shadow-sm">
@@ -118,7 +118,7 @@ export default function BroadcastPage() {
               id="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-950 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-950 outline-none transition focus:border-[#00205c] focus:ring-2 focus:ring-[#d6e3ff]"
               placeholder="Announcement title"
               required
             />
@@ -135,7 +135,7 @@ export default function BroadcastPage() {
               id="faculty"
               value={faculty}
               onChange={(event) => setFaculty(event.target.value)}
-              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-950 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-950 outline-none transition focus:border-[#00205c] focus:ring-2 focus:ring-[#d6e3ff]"
             >
               {FACULTIES.map((facultyName) => (
                 <option key={facultyName} value={facultyName}>
@@ -154,7 +154,7 @@ export default function BroadcastPage() {
             id="text"
             value={text}
             onChange={(event) => setText(event.target.value)}
-            className="mt-2 min-h-56 block w-full resize-y rounded-md border border-gray-300 bg-white px-4 py-3 text-sm leading-6 text-gray-950 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            className="mt-2 min-h-56 block w-full resize-y rounded-md border border-gray-300 bg-white px-4 py-3 text-sm leading-6 text-gray-950 outline-none transition focus:border-[#00205c] focus:ring-2 focus:ring-[#d6e3ff]"
             placeholder="Write the document text to distribute"
             required
           />
@@ -176,7 +176,7 @@ export default function BroadcastPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-md bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+            className="rounded-md bg-[#00205c] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#16356f] disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             {isSubmitting ? "Sending..." : "Send to All Students"}
           </button>

@@ -4,3 +4,6 @@ alatoo_doc.db
 static/pdfs/*.pdf
 venv/
 __pycache__/
+seed.py
+hello.txt
+static/generated_pdfs/*.pdf

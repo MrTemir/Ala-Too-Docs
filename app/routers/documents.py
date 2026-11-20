@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from datetime import datetime
 from functools import lru_cache
@@ -16,9 +17,19 @@ from app.pdf_engine import DocumentType, render_document_to_pdf
 from app.schemas import (
     DocumentCreate,
     DocumentDetailResponse,
+    DocumentGenerateRequest,
+    DocumentGenerateResponse,
     DocumentLanguage,
     DocumentResponse,
+    DocumentTranslateRequest,
     StudentSex,
+)
+from app.services.ai_service import (
+    AIConfigurationError,
+    AIProviderError,
+    StudentNotFoundError,
+    generate_document_text,
+    translate_document_text,
 )
 
 
@@ -122,6 +133,32 @@ router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 GENERATED_PDF_DIR = Path("static") / "generated_pdfs"
 
 
+SIGNER_ROLES = {UserRole.dean, UserRole.teacher, UserRole.admin}
+
+
+def can_review_document(user: User, document: Document) -> bool:
+    return user.role in SIGNER_ROLES and document.recipient_id == user.id
+
+
+def build_signature_hash(document: Document, user: User) -> str:
+    payload = f"{document.id}:{user.id}:{user.university_id}:{document.raw_text}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def resolve_document_language(value: str | None) -> DocumentLanguage:
+    try:
+        return DocumentLanguage(value)
+    except ValueError:
+        return DocumentLanguage.russian
+
+
+def resolve_pdf_path(file_url: str) -> Path:
+    relative_path = Path(file_url.lstrip("/"))
+    if relative_path.parts[:1] != ("static",):
+        raise ValueError(f"Unexpected document file_url: {file_url}")
+    return relative_path
+
+
 def get_language_content(language: DocumentLanguage) -> dict:
     return LANGUAGE_CONTENT.get(language, LANGUAGE_CONTENT[DocumentLanguage.russian])
 
@@ -148,7 +185,8 @@ def build_pdf_context(
         "student_name": current_user.full_name,
         "student_id": current_user.university_id,
         "faculty": current_user.faculty or content["missing_faculty"],
-        "group_or_faculty": current_user.faculty or content["missing_group"],
+        "group_name": current_user.group_name or content["missing_group"],
+        "group_or_faculty": current_user.group_name or current_user.faculty or content["missing_group"],
         "recipient_title": get_recipient_title(recipient.role, language),
         "recipient_name": recipient.full_name,
         "date": datetime.now().strftime("%d.%m.%Y"),
@@ -157,7 +195,7 @@ def build_pdf_context(
         "from_student_label": content["from_student_label"],
         "group_label": content["group_label"],
         "registration_label": content["registration_label"],
-        "signed_label": content["signed_label"],
+        "signed_label": "Подпись: __________________________",
     }
 
 
@@ -235,6 +273,7 @@ async def create_document(
     document = Document(
         title=payload.title,
         doc_type=DocumentType.student_complaint.value,
+        language=payload.language.value,
         raw_text=payload.raw_text,
         status=DocumentStatus.pending,
         creator_id=current_user.id,
@@ -273,7 +312,9 @@ async def get_outbox_documents(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[DocumentResponse]:
     result = await session.execute(
-        select(Document).where(Document.creator_id == current_user.id)
+        select(Document)
+        .where(Document.creator_id == current_user.id)
+        .order_by(Document.created_at.desc())
     )
     return list(result.scalars().all())
 
@@ -337,6 +378,7 @@ async def finalize_document(
     document = Document(
         title=payload.title,
         doc_type=payload.doc_type.value,
+        language=payload.language.value,
         raw_text=payload.final_text,
         status=DocumentStatus.pending,
         creator_id=current_user.id,
@@ -399,10 +441,10 @@ async def sign_document(
 ) -> DocumentDetailResponse:
     document = await get_document_for_user(document_id, current_user, session)
 
-    if current_user.role != UserRole.dean or document.recipient_id != current_user.id:
+    if not can_review_document(current_user, document):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the recipient dean can sign this document",
+            detail="Only the addressed dean, teacher, or staff member can sign this document",
         )
 
     if document.status != DocumentStatus.pending:
@@ -414,10 +456,36 @@ async def sign_document(
     signature = Signature(
         document_id=document.id,
         user_id=current_user.id,
-        signature_hash=f"signed:{document.id}:{current_user.id}",
+        signature_hash=build_signature_hash(document, current_user),
     )
     document.status = DocumentStatus.signed
     session.add(signature)
+    await session.flush()
+
+    recipient = await session.get(User, document.recipient_id)
+    creator = await session.get(User, document.creator_id)
+    if recipient is not None and creator is not None and document.file_url:
+        language = resolve_document_language(document.language)
+        pdf_context = build_pdf_context(
+            title=document.title,
+            document_id=document.id,
+            current_user=creator,
+            recipient=recipient,
+            final_text=document.raw_text,
+            language=language,
+        )
+        pdf_context["signed_label"] = get_language_content(language)["signed_label"]
+        pdf_context["signer_name"] = current_user.full_name
+        pdf_context["signature_hash"] = signature.signature_hash[:16]
+        pdf_path = resolve_pdf_path(document.file_url)
+        pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        pdf_path.write_bytes(
+            render_document_to_pdf(
+                document.doc_type or DocumentType.student_complaint.value,
+                pdf_context,
+            )
+        )
+
     await session.commit()
     await session.refresh(document)
 
@@ -432,10 +500,10 @@ async def reject_document(
 ) -> DocumentDetailResponse:
     document = await get_document_for_user(document_id, current_user, session)
 
-    if current_user.role != UserRole.dean or document.recipient_id != current_user.id:
+    if not can_review_document(current_user, document):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the recipient dean can reject this document",
+            detail="Only the addressed dean, teacher, or staff member can reject this document",
         )
 
     if document.status != DocumentStatus.pending:
@@ -488,6 +556,7 @@ def build_user_prompt(payload: DocumentPredictionRequest) -> str:
 @router.post("/predict-text", response_model=DocumentPredictionResponse)
 async def predict_document_text(
     payload: DocumentPredictionRequest,
+    _: User = Depends(get_current_user),
 ) -> DocumentPredictionResponse:
     try:
         client = get_groq_client()
@@ -524,3 +593,89 @@ async def predict_document_text(
         )
 
     return DocumentPredictionResponse(generated_text=generated_text.strip())
+
+
+generate_router = APIRouter(prefix="/api/documents", tags=["documents"])
+
+
+async def _generate_document_text(
+    payload: DocumentGenerateRequest,
+    current_user: User,
+    session: AsyncSession,
+) -> DocumentGenerateResponse:
+    try:
+        generated_text = await generate_document_text(
+            payload.description,
+            current_user.id,
+            session,
+            language=payload.language.value,
+        )
+    except AIConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except StudentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except AIProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    return DocumentGenerateResponse(generated_text=generated_text)
+
+
+@router.post("/generate", response_model=DocumentGenerateResponse)
+@generate_router.post("/generate", response_model=DocumentGenerateResponse)
+async def generate_document(
+    payload: DocumentGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> DocumentGenerateResponse:
+    return await _generate_document_text(payload, current_user, session)
+
+
+async def _translate_document_text(
+    payload: DocumentTranslateRequest,
+) -> DocumentGenerateResponse:
+    try:
+        translated_text = await translate_document_text(
+            payload.text,
+            language=payload.language.value,
+        )
+    except AIConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except AIProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    return DocumentGenerateResponse(generated_text=translated_text)
+
+
+@router.post("/translate", response_model=DocumentGenerateResponse)
+@generate_router.post("/translate", response_model=DocumentGenerateResponse)
+async def translate_document(
+    payload: DocumentTranslateRequest,
+    _: User = Depends(get_current_user),
+) -> DocumentGenerateResponse:
+    return await _translate_document_text(payload)
+
