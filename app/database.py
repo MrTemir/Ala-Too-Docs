@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./alatoo_doc.db"
     groq_api_key: str | None = None
     groq_model: str = "llama-3.3-70b-versatile"
+    cors_origins: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -28,6 +29,16 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+
+def get_cors_origins() -> list[str]:
+    defaults = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.56.1:3000",
+    ]
+    extra = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+    return defaults + extra
 
 engine = create_async_engine(
     settings.database_url,
