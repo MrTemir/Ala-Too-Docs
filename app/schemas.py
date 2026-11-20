@@ -54,6 +54,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    university_id: str = Field(min_length=1, max_length=64)
+    first_name: str = Field(min_length=1, max_length=80)
+    last_name: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=1, max_length=128)
+    password_confirm: str = Field(min_length=1, max_length=128)
+
+
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
