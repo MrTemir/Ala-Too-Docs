@@ -59,12 +59,20 @@ export default function Header() {
             </button>
           </>
         ) : (
-          <Link
-            className="rounded-md border border-gray-300 px-3 py-1.5 transition hover:bg-gray-50"
-            href="/login"
-          >
-            Login
-          </Link>
+          <>
+            <Link
+              className="rounded-md border border-gray-300 px-3 py-1.5 transition hover:bg-gray-50"
+              href="/register"
+            >
+              Register
+            </Link>
+            <Link
+              className="rounded-md border border-gray-300 px-3 py-1.5 transition hover:bg-gray-50"
+              href="/login"
+            >
+              Login
+            </Link>
+          </>
         )}
       </nav>
 
